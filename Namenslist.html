@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Namen Liste</title>
+    <style>
+        
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    text-align: center;
+    color: #444;
+    margin-top: 20px;
+    font-size: 2.5rem;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin: 0 10px;
+    color: #007BFF;
+    transition: color 0.3s ease;
+}
+
+.toolbar button:hover {
+    color: #0056b3;
+}
+
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 20px;
+    margin-top: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.form-container input, .form-container button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.form-container input:focus, .form-container button:focus {
+    outline: none;
+    border-color: #007BFF;
+}
+
+.form-container button {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.form-container button:hover {
+    background-color: #0056b3;
+}
+
+.names-list {
+    margin-top: 20px;
+    padding: 0 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background-color: #f7f7f7;
+    font-weight: bold;
+    color: #555;
+}
+
+td {
+    color: #555;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.action-buttons button {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.action-buttons button:hover {
+    background-color: #0056b3;
+}
+
+.sort-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.sort-container select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+    </style>
+</head>
+
+<body>
+    <h1>Namen Liste</h1>
+
+    <div class="toolbar">
+        <button onclick="undoAction()">&#8592; Rückgängig</button>
+        <button onclick="redoAction()">&#8594; Wiederherstellen</button>
+    </div>
+
+    <div class="form-container">
+        <label for="lastName">Nachname:</label>
+        <input type="text" id="lastName" placeholder="Nachname eingeben">
+
+        <label for="firstName">Vorname:</label>
+        <input type="text" id="firstName" placeholder="Vorname eingeben">
+
+        <label for="birthDate">Geburtsdatum:</label>
+        <input type="date" id="birthDate">
+
+        <button class="add-btn" onclick="addName()">Hinzufügen</button>
+    </div>
+
+    <div class="sort-container">
+        <label for="sortCriteria">Sortieren nach:</label>
+        <select id="sortCriteria" onchange="sortNames()">
+            <option value="lastName">Nachname</option>
+            <option value="firstName">Vorname</option>
+            <option value="birthDateAsc">Geburtsdatum (aufsteigend)</option>
+            <option value="birthDateDesc">Geburtsdatum (absteigend)</option>
+        </select>
+    </div>
+
+    <div class="names-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nachname</th>
+                    <th>Vorname</th>
+                    <th>Geburtsdatum</th>
+                    <th>Alter</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody id="nameTableBody">
+                <!-- Dynamisch generierte Namen werden hier eingefügt -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        let names = JSON.parse(localStorage.getItem('namesList')) || [
+           
+            { lastName: "test2", firstName: "test2", birthDate: "2003-02-01" },
+            { lastName: "test", firstName: "test", birthDate: "2001-01-01" },
+
+        ];
+
+        let history = [];
+        let future = [];
+        let editIndex = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderNames();
+        });
+
+        function addName() {
+            const lastName = document.getElementById('lastName').value;
+            const firstName = document.getElementById('firstName').value;
+            const birthDate = document.getElementById('birthDate').value;
+
+            if (lastName && firstName && birthDate) {
+                saveState(); // Zustand vor der Änderung speichern
+                if (editIndex !== null) {
+                    names[editIndex] = { lastName, firstName, birthDate };
+                    editIndex = null;
+                } else {
+                    names.push({ lastName, firstName, birthDate });
+                }
+                updateLocalStorage();
+                renderNames();
+                clearFuture(); // Zukünftige Zustände nach neuer Aktion löschen
+
+                // Eingabefelder leeren
+                document.getElementById('lastName').value = '';
+                document.getElementById('firstName').value = '';
+                document.getElementById('birthDate').value = '';
+            } else {
+                alert('Bitte füllen Sie alle Felder aus.');
+            }
+        }
+
+        function renderNames() {
+            const tbody = document.getElementById('nameTableBody');
+            tbody.innerHTML = '';
+
+            names.forEach((name, index) => {
+                const age = calculateAge(name.birthDate);
+                const row = `
+                    <tr>
+                        <td>${name.lastName}</td>
+                        <td>${name.firstName}</td>
+                        <td>${new Date(name.birthDate).toLocaleDateString('de-DE')}</td>
+                        <td>${age} Jahre</td>
+                        <td class="action-buttons">
+                            <button onclick="editName(${index})">Bearbeiten</button>
+                            <button onclick="deleteName(${index})">Löschen</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function editName(index) {
+            const name = names[index];
+            document.getElementById('lastName').value = name.lastName;
+            document.getElementById('firstName').value = name.firstName;
+            document.getElementById('birthDate').value = name.birthDate;
+            editIndex = index;
+        }
+
+        function deleteName(index) {
+            saveState(); // Zustand vor der Änderung speichern
+            names.splice(index, 1);
+            updateLocalStorage();
+            renderNames();
+            clearFuture();
+        }
+
+        function updateLocalStorage() {
+            localStorage.setItem('namesList', JSON.stringify(names));
+        }
+
+        function saveState() {
+            history.push(JSON.parse(JSON.stringify(names))); // Aktuellen Zustand speichern
+            if (history.length > 50) history.shift(); // Älteste Einträge löschen, um Speicherplatz zu sparen
+        }
+
+        function clearFuture() {
+            future = [];
+        }
+
+        function undoAction() {
+            if (history.length > 0) {
+                future.push(JSON.parse(JSON.stringify(names))); // Aktuellen Zustand speichern
+                names = history.pop(); // Letzten Zustand wiederherstellen
+                updateLocalStorage();
+                renderNames();
+            }
+        }
+
+        function redoAction() {
+            if (future.length > 0) {
+                history.push(JSON.parse(JSON.stringify(names))); // Aktuellen Zustand speichern
+                names = future.pop(); // Nächsten Zustand wiederherstellen
+                updateLocalStorage();
+                renderNames();
+            }
+        }
+
+        function sortNames() {
+            const sortCriteria = document.getElementById('sortCriteria').value;
+            if (sortCriteria === 'lastName') {
+                names.sort((a, b) => a.lastName.localeCompare(b.lastName));
+            } else if (sortCriteria === 'firstName') {
+                names.sort((a, b) => a.firstName.localeCompare(b.firstName));
+            } else if (sortCriteria === 'birthDateAsc') {
+                names.sort((a, b) => new Date(a.birthDate) - new Date(b.birthDate));
+            } else if (sortCriteria === 'birthDateDesc') {
+                names.sort((a, b) => new Date(b.birthDate) - new Date(a.birthDate));
+            }
+            renderNames();
+        }
+    </script>
+</body>
+</html>
