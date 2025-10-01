@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer 4 Gewinnt</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .player-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        
+        .player1 .player-color {
+            background: red;
+            box-shadow: 0 0 10px red;
+        }
+        
+        .player2 .player-color {
+            background: yellow;
+            box-shadow: 0 0 10px yellow;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .cell {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .cell.red {
+            background: red;
+            box-shadow: 0 0 15px red;
+        }
+        
+        .cell.yellow {
+            background: yellow;
+            box-shadow: 0 0 15px yellow;
+        }
+        
+        .cell.win {
+            animation: winAnimation 1s infinite alternate;
+        }
+        
+        @keyframes winAnimation {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); box-shadow: 0 0 20px white; }
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #888 !important;
+            color: #ccc !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+        }
+        
+        .status {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .win-message {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: textPulse 1s infinite alternate;
+        }
+        
+        @keyframes textPulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            background: rgba(255, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .stats-table th, .stats-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-table th {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .stats-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        @media (max-width: 600px) {
+            .cell {
+                width: 40px;
+                height: 40px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Multiplayer 4 Gewinnt</h1>
+        
+        <div class="game-info">
+            <div class="player player1">
+                <div class="player-color"></div>
+                <span>Spieler 1 (Rot)</span>
+            </div>
+            <div class="player player2">
+                <div class="player-color"></div>
+                <span>Spieler 2 (Gelb)</span>
+            </div>
+        </div>
+        
+        <div class="status" id="status">Verbinde mit Server...</div>
+        
+        <div class="game-board" id="gameBoard">
+            <!-- Spielbrett wird per JavaScript generiert -->
+        </div>
+        
+        <div class="controls">
+            <button id="restartBtn" disabled>Neues Spiel</button>
+            <button id="connectBtn" disabled>Verbinden</button>
+        </div>
+        
+        <div class="name-controls" style="margin-top:20px; display:flex; gap:10px; justify-content:center; align-items:center;">
+            <input type="text" id="playerNameInput" placeholder="Dein Name" style="padding:10px; border-radius:5px; border:none;">
+            <button id="applyNameBtn">Name anwenden</button>
+        </div>
+        
+        <div id="roomListContainer" style="margin-top:20px;">
+            <h3>Raumliste</h3>
+            <div id="roomList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;"></div>
+        </div>
+        
+        <div id="statsContainer" style="margin-top:20px; display:none;">
+            <h3>Spieler-Statistiken</h3>
+            <table class="stats-table" id="statsTable">
+                <thead>
+                    <tr>
+                        <th>Spieler</th>
+                        <th>Siege</th>
+                        <th>Niederlagen</th>
+                        <th>Unentschieden</th>
+                        <th>Spiele</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <button id="showStatsBtn" style="margin-top:10px; width:100%;">Statistiken anzeigen/verstecken</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameBoard = document.getElementById('gameBoard');
+            const statusElement = document.getElementById('status');
+            const restartBtn = document.getElementById('restartBtn');
+            const connectBtn = document.getElementById('connectBtn');
+            const playerNameInput = document.getElementById('playerNameInput');
+            const applyNameBtn = document.getElementById('applyNameBtn');
+            const roomList = document.getElementById('roomList');
+            const statsContainer = document.getElementById('statsContainer');
+            const statsBody = document.getElementById('statsBody');
+            const showStatsBtn = document.getElementById('showStatsBtn');
+            
+            let playerName = '';
+            let socket;
+            let gameActive = false;
+            let playerNumber = 0;
+            let currentPlayer = 1;
+            let joinedRoom = null;
+            
+            // Spielbrett erstellen
+            function createBoard() {
+                gameBoard.innerHTML = '';
+                for (let row = 0; row < 6; row++) {
+                    for (let col = 0; col < 7; col++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        cell.dataset.column = col;
+                        cell.addEventListener('click', () => makeMove(col));
+                        gameBoard.appendChild(cell);
+                    }
+                }
+            }
+            
+            // Verbindung zum Server herstellen
+            function connectToServer() {
+                if (socket) {
+                    socket.disconnect();
+                }
+                
+                statusElement.textContent = "Verbinde mit Server...";
+                socket = io({
+                    transports: ['websocket', 'polling']
+                });
+                
+                socket.on('connect', () => {
+                    connectBtn.disabled = true;
+                    socket.emit('register-name', playerName);
+                    statusElement.textContent = "Verbunden als " + playerName;
+                });
+                
+                socket.on('name-registered', (name) => {
+                    console.log("Name registriert:", name);
+                });
+                
+                socket.on('room-list', (rooms) => {
+                    showRooms(rooms);
+                });
+                
+                socket.on('room-joined', (roomIdx) => {
+                    joinedRoom = roomIdx;
+                    statusElement.textContent = `Raum ${roomIdx+1} beigetreten. Warte auf zweiten Spieler...`;
+                    showRooms();
+                });
+                
+                socket.on('player-number', (number) => {
+                    playerNumber = number;
+                    statusElement.textContent = `Du bist Spieler ${playerNumber} (${playerNumber === 1 ? 'Rot' : 'Gelb'})`;
+                });
+                
+                socket.on('game-start', (data) => {
+                    gameActive = true;
+                    restartBtn.disabled = false;
+                    statusElement.textContent = `Spiel gestartet! Du bist Spieler ${data.playerNumber}`;
+                });
+                
+                socket.on('game-update', (data) => {
+                    updateBoard(data.board);
+                    currentPlayer = data.currentPlayer;
+                    
+                    if (currentPlayer === playerNumber) {
+                        statusElement.textContent = "Du bist am Zug";
+                    } else {
+                        statusElement.textContent = "Gegner ist am Zug";
+                    }
+                });
+                
+                socket.on('game-over', (data) => {
+                    gameActive = false;
+                    restartBtn.disabled = false;
+                    
+                    if (data.winCells && data.winCells.length > 0) {
+                        highlightWinCells(data.winCells);
+                    }
+                    
+                    if (data.winner === 0) {
+                        statusElement.innerHTML = "<span class='win-message'>Unentschieden!</span>";
+                    } else if (data.winner === playerNumber) {
+                        statusElement.innerHTML = "<span class='win-message'>Du hast gewonnen! 🎉</span>";
+                    } else {
+                        statusElement.innerHTML = "<span class='win-message'>Spieler " + data.winner + " hat gewonnen!</span>";
+                    }
+                });
+                
+                socket.on('game-interrupted', () => {
+                    gameActive = false;
+                    statusElement.textContent = "Spiel unterbrochen - Gegner hat verlassen";
+                });
+                
+                socket.on('status-message', (message) => {
+                    statusElement.textContent = message;
+                });
+                
+                socket.on('error-message', (message) => {
+                    statusElement.innerHTML = `<span class="error-message">${message}</span>`;
+                });
+                
+                socket.on('stats-update', (stats) => {
+                    showStats(stats);
+                });
+                
+                socket.on('disconnect', () => {
+                    statusElement.textContent = "Verbindung zum Server getrennt";
+                    gameActive = false;
+                    connectBtn.disabled = false;
+                });
+            }
+            
+            // Zug machen
+            function makeMove(column) {
+                if (!gameActive) {
+                    statusElement.textContent = "Spiel ist nicht aktiv";
+                    return;
+                }
+                
+                if (currentPlayer !== playerNumber) {
+                    statusElement.textContent = "Nicht am Zug";
+                    return;
+                }
+                
+                socket.emit('make-move', column);
+            }
+            
+            // Spielbrett aktualisieren
+            function updateBoard(board) {
+                const cells = document.querySelectorAll('.cell');
+                for (let i = 0; i < cells.length; i++) {
+                    cells[i].classList.remove('red', 'yellow', 'win');
+                    if (board[i] === 1) {
+                        cells[i].classList.add('red');
+                    } else if (board[i] === 2) {
+                        cells[i].classList.add('yellow');
+                    }
+                }
+            }
+            
+            // Gewinnende Steine hervorheben
+            function highlightWinCells(cellIndexes) {
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => cell.classList.remove('win'));
+                cellIndexes.forEach(index => {
+                    if (index >= 0 && index < cells.length) {
+                        cells[index].classList.add('win');
+                    }
+                });
+            }
+            
+            // Räume anzeigen
+            function showRooms(rooms = null) {
+                roomList.innerHTML = '';
+                for (let i = 0; i < 4; i++) {
+                    const roomDiv = document.createElement('div');
+                    roomDiv.style.padding = '10px';
+                    roomDiv.style.background = 'rgba(255,255,255,0.1)';
+                    roomDiv.style.borderRadius = '5px';
+                    
+                    const roomInfo = rooms ? rooms[i] : { players: [], active: false };
+                    const playerCount = roomInfo.players ? roomInfo.players.length : 0;
+                    
+                    roomDiv.innerHTML = `
+                        <strong>Raum ${i+1}</strong><br>
+                        Spieler: ${playerCount}/2<br>
+                        Status: ${roomInfo.active ? 'Aktiv' : playerCount === 2 ? 'Voll' : 'Frei'}
+                    `;
+                    
+                    const joinBtn = document.createElement('button');
+                    joinBtn.textContent = 'Beitreten';
+                    joinBtn.style.marginTop = '5px';
+                    joinBtn.style.width = '100%';
+                    joinBtn.disabled = playerCount >= 2 || joinedRoom !== null;
+                    joinBtn.onclick = () => socket.emit('join-room', i);
+                    
+                    const leaveBtn = document.createElement('button');
+                    leaveBtn.textContent = 'Verlassen';
+                    leaveBtn.style.marginTop = '5px';
+                    leaveBtn.style.width = '100%';
+                    leaveBtn.disabled = joinedRoom !== i;
+                    leaveBtn.onclick = () => {
+                        socket.emit('leave-room');
+                        joinedRoom = null;
+                        showRooms();
+                    };
+                    
+                    roomDiv.appendChild(joinBtn);
+                    roomDiv.appendChild(leaveBtn);
+                    roomList.appendChild(roomDiv);
+                }
+            }
+            
+            // Statistiken anzeigen
+            function showStats(stats) {
+                statsBody.innerHTML = '';
+                if (stats.length === 0) {
+                    statsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Statistiken verfügbar</td></tr>';
+                    return;
+                }
+                
+                stats.forEach((player, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${player.player_name}</td>
+                        <td style="color:#4CAF50;">${player.wins}</td>
+                        <td style="color:#f44336;">${player.losses}</td>
+                        <td style="color:#FFC107;">${player.draws}</td>
+                        <td>${player.games_played}</td>
+                    `;
+                    statsBody.appendChild(row);
+                });
+            }
+            
+            // Event-Listener
+            applyNameBtn.addEventListener('click', () => {
+                playerName = playerNameInput.value.trim();
+                if (playerName) {
+                    connectBtn.disabled = false;
+                    applyNameBtn.disabled = true;
+                    playerNameInput.disabled = true;
+                    statusElement.textContent = "Name gesetzt: " + playerName + ". Klicke auf Verbinden.";
+                }
+            });
+            
+            connectBtn.addEventListener('click', connectToServer);
+            
+            restartBtn.addEventListener('click', () => {
+                if (socket) {
+                    socket.emit('restart-game');
+                }
+            });
+            
+            showStatsBtn.addEventListener('click', () => {
+                const isVisible = statsContainer.style.display === 'block';
+                statsContainer.style.display = isVisible ? 'none' : 'block';
+                showStatsBtn.textContent = isVisible ? 'Statistiken anzeigen' : 'Statistiken verstecken';
+            });
+            
+            // Enter-Taste für Name-Eingabe
+            playerNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyNameBtn.click();
+                }
+            });
+            
+            // Initialisierung
+            createBoard();
+            showRooms();
+        });
+    </script>
+</body>
+</html>
